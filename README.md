@@ -43,7 +43,9 @@ Without it, the FA, filings, 13F and event pages say so and the rest still works
 
 ## Host it
 
-The repo includes a `Dockerfile` and a `render.yaml`. On [Render](https://render.com), choose **New > Blueprint** and point it at this repo.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/w-ducdoan/keel-terminal)
+
+The repo includes a `Dockerfile` and a `render.yaml`, so the button above (or **New > Blueprint** on [Render](https://render.com)) sets it up.
 Then set `KEEL_SEC_CONTACT`, and optionally `FRED_API_KEY`, in the service's environment. The free plan sleeps when idle, so the first visit after a while takes about a minute.
 
 ## Data and terms
