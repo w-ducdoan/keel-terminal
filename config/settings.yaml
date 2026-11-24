@@ -1,0 +1,386 @@
+# Keel public edition settings. Every list is editable (quotes are Yahoo symbols, rates are FRED ids).
+port: 6870
+refresh:
+  market: 90
+  extended: 300
+  closed: 1800
+  history_hours: 12
+benchmark: SPY
+history_period: 2y
+cross_asset:
+- label: S&P 500 fut
+  symbol: ES=F
+- label: Nasdaq 100 fut
+  symbol: NQ=F
+- label: Russell 2000
+  symbol: ^RUT
+- label: VIX
+  symbol: ^VIX
+- label: US 10Y yield
+  symbol: ^TNX
+  kind: yield
+- label: US 30Y yield
+  symbol: ^TYX
+  kind: yield
+- label: Dollar (DXY)
+  symbol: DX-Y.NYB
+- label: WTI crude
+  symbol: CL=F
+- label: Gold
+  symbol: GC=F
+- label: Copper
+  symbol: HG=F
+- label: High yield (HYG)
+  symbol: HYG
+- label: Semis (SMH)
+  symbol: SMH
+- label: Bitcoin
+  symbol: BTC-USD
+fred:
+- label: HY OAS (bp)
+  series: BAMLH0A0HYM2
+  scale: 100
+- label: 10Y TIPS real yield
+  series: DFII10
+  scale: 1
+- label: 10Y breakeven
+  series: T10YIE
+  scale: 1
+markets:
+  refresh_minutes:
+    market: 2
+    extended: 5
+    closed: 30
+  groups:
+  - id: americas
+    label: Americas
+    rows:
+    - label: S&P 500
+      symbol: ^GSPC
+    - label: Dow Jones
+      symbol: ^DJI
+    - label: Nasdaq Comp
+      symbol: ^IXIC
+    - label: Russell 2000
+      symbol: ^RUT
+    - label: S&P 500 fut
+      symbol: ES=F
+    - label: Nasdaq 100 fut
+      symbol: NQ=F
+    - label: VIX
+      symbol: ^VIX
+    - label: S&P/TSX
+      symbol: ^GSPTSE
+    - label: Bovespa
+      symbol: ^BVSP
+    - label: Mexico IPC
+      symbol: ^MXX
+  - id: emea
+    label: EMEA
+    rows:
+    - label: Euro Stoxx 50
+      symbol: ^STOXX50E
+    - label: FTSE 100
+      symbol: ^FTSE
+    - label: DAX
+      symbol: ^GDAXI
+    - label: CAC 40
+      symbol: ^FCHI
+    - label: FTSE MIB
+      symbol: FTSEMIB.MI
+    - label: IBEX 35
+      symbol: ^IBEX
+  - id: asia
+    label: Asia-Pacific
+    rows:
+    - label: Nikkei 225
+      symbol: ^N225
+    - label: Hang Seng
+      symbol: ^HSI
+    - label: Shanghai Comp
+      symbol: 000001.SS
+    - label: KOSPI
+      symbol: ^KS11
+    - label: Taiwan Wtd
+      symbol: ^TWII
+    - label: ASX 200
+      symbol: ^AXJO
+    - label: Nifty 50
+      symbol: ^NSEI
+  - id: fx
+    label: FX
+    rows:
+    - label: Dollar index
+      symbol: DX-Y.NYB
+    - label: EUR/USD
+      symbol: EURUSD=X
+    - label: USD/JPY
+      symbol: JPY=X
+    - label: GBP/USD
+      symbol: GBPUSD=X
+    - label: USD/CHF
+      symbol: CHF=X
+    - label: USD/CAD
+      symbol: CAD=X
+    - label: AUD/USD
+      symbol: AUDUSD=X
+    - label: USD/CNY
+      symbol: CNY=X
+    - label: USD/MXN
+      symbol: MXN=X
+    - label: USD/BRL
+      symbol: BRL=X
+    - label: USD/INR
+      symbol: INR=X
+    - label: USD/KRW
+      symbol: KRW=X
+    - label: Bitcoin
+      symbol: BTC-USD
+  - id: energy
+    label: Energy
+    rows:
+    - label: WTI crude
+      symbol: CL=F
+    - label: Brent crude
+      symbol: BZ=F
+    - label: Natural gas
+      symbol: NG=F
+    - label: RBOB gasoline
+      symbol: RB=F
+    - label: Heating oil
+      symbol: HO=F
+  - id: metals
+    label: Metals
+    rows:
+    - label: Gold
+      symbol: GC=F
+    - label: Silver
+      symbol: SI=F
+    - label: Copper
+      symbol: HG=F
+    - label: Platinum
+      symbol: PL=F
+  - id: ags
+    label: Agriculture
+    rows:
+    - label: Corn
+      symbol: ZC=F
+    - label: Wheat
+      symbol: ZW=F
+    - label: Soybeans
+      symbol: ZS=F
+    - label: Coffee
+      symbol: KC=F
+  - id: rates_live
+    label: Treasury yields (live)
+    yield: true
+    rows:
+    - label: 13-week bill
+      symbol: ^IRX
+    - label: 5-year
+      symbol: ^FVX
+    - label: 10-year
+      symbol: ^TNX
+    - label: 30-year
+      symbol: ^TYX
+  - id: credit_etf
+    label: Credit ETFs
+    rows:
+    - label: High yield (HYG)
+      symbol: HYG
+    - label: High yield (JNK)
+      symbol: JNK
+    - label: Inv. grade (LQD)
+      symbol: LQD
+    - label: Leveraged loans (BKLN)
+      symbol: BKLN
+    - label: BDCs (BIZD)
+      symbol: BIZD
+    - label: EM debt (EMB)
+      symbol: EMB
+  - id: sectors
+    label: S&P sectors
+    rows:
+    - label: Technology
+      symbol: XLK
+    - label: Financials
+      symbol: XLF
+    - label: Health Care
+      symbol: XLV
+    - label: Energy
+      symbol: XLE
+    - label: Industrials
+      symbol: XLI
+    - label: Cons. Discretionary
+      symbol: XLY
+    - label: Cons. Staples
+      symbol: XLP
+    - label: Utilities
+      symbol: XLU
+    - label: Materials
+      symbol: XLB
+    - label: Real Estate
+      symbol: XLRE
+    - label: Communication
+      symbol: XLC
+    - label: Semis (SMH)
+      symbol: SMH
+    - label: Regional banks (KRE)
+      symbol: KRE
+    - label: Homebuilders (ITB)
+      symbol: ITB
+  curve:
+  - tenor: 1M
+    series: DGS1MO
+  - tenor: 3M
+    series: DGS3MO
+  - tenor: 6M
+    series: DGS6MO
+  - tenor: 1Y
+    series: DGS1
+  - tenor: 2Y
+    series: DGS2
+  - tenor: 3Y
+    series: DGS3
+  - tenor: 5Y
+    series: DGS5
+  - tenor: 7Y
+    series: DGS7
+  - tenor: 10Y
+    series: DGS10
+  - tenor: 20Y
+    series: DGS20
+  - tenor: 30Y
+    series: DGS30
+  money:
+  - label: Fed funds effective
+    series: DFF
+  - label: SOFR
+    series: SOFR
+  - label: 2s10s (pts)
+    series: T10Y2Y
+  - label: 3m10y (pts)
+    series: T10Y3M
+  - label: 10Y real (TIPS)
+    series: DFII10
+  - label: 10Y breakeven
+    series: T10YIE
+  spreads:
+  - label: US high yield OAS
+    series: BAMLH0A0HYM2
+  - label: US CCC & lower OAS
+    series: BAMLH0A3HYC
+  - label: US BB OAS
+    series: BAMLH0A1HYBB
+  - label: US inv. grade OAS
+    series: BAMLC0A0CM
+  - label: US BBB OAS
+    series: BAMLC0A4CBBB
+  economy:
+  - label: CPI (y/y)
+    series: CPIAUCSL
+    transform: yoy
+    unit: '%'
+  - label: Core CPI (y/y)
+    series: CPILFESL
+    transform: yoy
+    unit: '%'
+  - label: Core PCE (y/y)
+    series: PCEPILFE
+    transform: yoy
+    unit: '%'
+  - label: Payrolls (m/m, k)
+    series: PAYEMS
+    transform: mom_diff
+    unit: k
+  - label: Unemployment rate
+    series: UNRATE
+    transform: level
+    unit: '%'
+  - label: Initial claims (k)
+    series: ICSA
+    transform: level
+    unit: k
+    scale: 0.001
+  - label: Real GDP (q/q ann.)
+    series: A191RL1Q225SBEA
+    transform: level
+    unit: '%'
+  - label: Retail sales (m/m)
+    series: RSAFS
+    transform: mom_pct
+    unit: '%'
+  - label: Industrial production (y/y)
+    series: INDPRO
+    transform: yoy
+    unit: '%'
+  - label: UMich sentiment
+    series: UMCSENT
+    transform: level
+    unit: ''
+news:
+  refresh_minutes: 5
+  max_age_hours: 48
+  max_items: 160
+  feeds:
+  - name: CNBC
+    url: https://www.cnbc.com/id/100003114/device/rss/rss.html
+  - name: CNBC Markets
+    url: https://www.cnbc.com/id/20910258/device/rss/rss.html
+  - name: MarketWatch
+    url: https://feeds.content.dowjones.io/public/rss/mw_topstories
+  - name: WSJ Markets
+    url: https://feeds.content.dowjones.io/public/rss/RSSMarketsMain
+  - name: WSJ Business
+    url: https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness
+  - name: WSJ Economy
+    url: https://feeds.content.dowjones.io/public/rss/socialeconomyfeed
+  - name: WSJ World
+    url: https://feeds.content.dowjones.io/public/rss/RSSWorldNews
+  - name: WSJ Tech
+    url: https://feeds.content.dowjones.io/public/rss/RSSWSJD
+  google_topics:
+  - topic: Fed & rates
+    query: Federal Reserve OR Treasury yields OR inflation
+  - topic: US policy
+    query: White House OR tariffs OR Congress economy
+  - topic: Geopolitics
+    query: war OR Iran OR Ukraine OR Taiwan markets
+  - topic: Energy
+    query: oil prices OR OPEC OR natural gas
+  - topic: Metals
+    query: gold price OR copper price OR silver price
+  - topic: Credit
+    query: credit markets OR high yield bonds OR private credit
+  - topic: Equities
+    query: stock market today
+  - topic: AI & tech
+    query: AI stocks OR semiconductors OR data center spending
+  yahoo_symbols:
+  - ^GSPC
+  - ^TNX
+  - CL=F
+  - GC=F
+  - DX-Y.NYB
+  - ^VIX
+  - HYG
+  - BTC-USD
+peers: {}
+funds13f:
+- Berkshire Hathaway|1067983
+- Pershing Square Capital Management|1336528
+- Baupost Group
+- Lone Pine Capital
+- Viking Global Investors
+- Coatue Management
+- Tiger Global Management
+- Akre Capital Management
+- ValueAct
+- Third Point
+- Durable Capital Partners
+- Altimeter Capital Management
+- D1 Capital Partners
+- Egerton Capital
+- TCI Fund Management
+- Fundsmith
+investing_hq: research

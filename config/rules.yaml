@@ -1,0 +1,63 @@
+# Thresholds the server reads at start-up (portfolio rules are unused in public mode).
+caps:
+  single_name: 0.15
+  sector: 0.3
+  consumer_discretionary: 0.1
+  hedge_sleeve_target: 0.1
+  hedge_sleeve_cap: 0.12
+  hedge_sleeve_floor: 0.07
+  event_pod: 0.2
+  warn_ratio: 0.9
+beta:
+  hard_remove: 1.8
+  window: 2y weekly vs SPY
+watchlist:
+  approach_pct: 0.05
+moves:
+  day_move_pct: 0.05
+  five_day_drop_pct: 0.08
+  drawdown_from_cost: 0.2
+  drawdown_from_high: 0.25
+earnings_window_days: 7
+digest_lookback_days: 3
+scenarios:
+- name: Rates +100bp
+  shocks:
+    TLT: -0.15
+    SPY: -0.05
+- name: Credit spreads +200bp
+  shocks:
+    HYG: -0.08
+    SPY: -0.12
+- name: AI capex unwind
+  shocks:
+    SMH: -0.3
+    SPY: -0.1
+- name: Oil spike +30%
+  shocks:
+    USO: 0.3
+    SPY: -0.05
+- name: Recession
+  shocks:
+    SPY: -0.25
+    HYG: -0.1
+    TLT: 0.08
+- name: Dollar +5%
+  shocks:
+    UUP: 0.05
+    SPY: -0.03
+factors:
+  Market:
+    long: SPY
+  Size:
+    long: IWM
+    short: SPY
+  Value:
+    long: IWD
+    short: IWF
+  Momentum:
+    long: MTUM
+    short: SPY
+  Quality:
+    long: QUAL
+    short: SPY

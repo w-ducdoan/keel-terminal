@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: keel-terminal
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/state
+    envVars:
+      - key: KEEL_PUBLIC
+        value: "1"
+      - key: KEEL_SEC_CONTACT
+        sync: false
+      - key: FRED_API_KEY
+        sync: false
