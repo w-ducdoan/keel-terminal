@@ -5,9 +5,6 @@ few hundred requests give a local table of about 15 fiscal years for the whole U
 then computes any window (1 to 15 years) from that table: CAGR, years of growth, worst year, average,
 minimum, change. Figures are as most recently filed (restated where the company restated them).
 
-Foreign companies that report under IFRS aren't in the bulk frames, so they are read one company at a
-time (the file is not kept), in the currency they report in.
-
 A value that can't be computed honestly is None, never a guess: a CAGR from a zero or negative start,
 a missing year, a company whose latest annual report is stale, or EPS across a share-count jump
 (old EPS may not be split-adjusted).
@@ -32,10 +29,6 @@ FILE = DATA_DIR / "history_sec.pkl"
 FIRST_YEAR = 2009
 MAX_YEARS = 15
 STALE_DAYS = 550        # the latest fiscal year must have ended within this
-STALE_FOREIGN = 760     # SEC's feed can lag a year for IFRS filers: allowed, but marked with its fiscal year
-FOREIGN_DAYS = 14       # re-read each foreign company this often
-# Growth in these currencies is mostly inflation (IAS 29): margins still work, growth statistics are refused
-HYPERINFLATION = {"ARS", "TRY", "VES", "VED", "LBP", "IRR", "SDG", "ZWL", "ZWG"}
 REFRESH_DAYS = 7        # re-pull the last three years
 FULL_DAYS = 60          # re-pull everything
 
@@ -142,14 +135,7 @@ def build(full: bool = False) -> dict[str, Any]:
     tick = sec._get_json("https://www.sec.gov/files/company_tickers.json", "company_tickers.json", 7 * 86400) or {}
     now = time.time()
     out = {"raw": raw, "ends": ends, "ciks": {v["ticker"].upper(): int(v["cik_str"]) for v in tick.values()},
-           "built": now, "full": now if full else old.get("full", now),
-           "foreign": old.get("foreign", {}), "foreign_at": old.get("foreign_at", 0)}
-    _save(out)
-    STATUS.update(state="ready")
-    return out
-
-
-def _save(out: dict[str, Any]) -> None:
+           "built": now, "full": now if full else old.get("full", now)}
     tmp = FILE.with_suffix(".tmp")
     with tmp.open("wb") as f:
         pickle.dump(out, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -157,105 +143,8 @@ def _save(out: dict[str, Any]) -> None:
     global _mem
     with _lock:
         _mem = out
-
-
-# ---------- foreign (IFRS) companies ----------
-
-def foreign_candidates(d: dict[str, Any], tickers: list[str]) -> list[int]:
-    """Companies with no recent US-GAAP annual figures. (A US company with no revenue still files net income.)"""
-    cutoff = (date.today() - timedelta(days=STALE_DAYS)).isoformat()
-    out: list[int] = []
-    for t in tickers:
-        c = d["ciks"].get(t.upper().replace(".", "-"))
-        if c and c not in out and max(d["ends"].get(c, {}).values(), default="") < cutoff:
-            out.append(c)
+    STATUS.update(state="ready")
     return out
-
-
-def fiscal_slot(end: str) -> int:
-    """The calendar year a 12-month fiscal year mostly falls in (the convention SEC uses for its frames)."""
-    return (date.fromisoformat(end) - timedelta(days=182)).year
-
-
-def parse_ifrs(facts: dict[str, Any]) -> dict[str, Any] | None:
-    """One company-facts file -> the same shape as the frames table, in its reporting currency."""
-    fx = facts.get("facts", {})
-    ifrs, dei = fx.get("ifrs-full"), fx.get("dei", {})
-    if not ifrs:
-        return None
-    cur = sec.reporting_currency(ifrs)
-    tags = {k: (t, kind) for kind, rows in sec.KIND.values() for k, _, t, _, _ in rows}
-    raw: dict[str, list[dict[int, float]]] = {}
-    ends: dict[int, str] = {}
-    for k in RAW:
-        names, kind = list(tags[k][0]), tags[k][1]
-        if k == "da":
-            names += [t for t in tags["cf_da"][0] if t not in names]
-        slots = []
-        for t in names:
-            c = (dei if t.startswith("dei:") else ifrs).get(t.split(":")[-1])
-            annual = sec._series(c.get("units", {}), kind, k not in sec.NON_ADDITIVE, cur)["A"] if c else {}
-            slots.append({fiscal_slot(e): float(v) for e, v in annual.items()})
-            if k in ("rev", "ni"):
-                ends.update({fiscal_slot(e): e for e in annual})
-        raw[k] = slots
-    return {"raw": raw, "ends": ends, "cur": cur} if ends else None
-
-
-def _listed() -> list[str]:
-    """US-listed tickers over $200M (Yahoo): where foreign companies worth reading come from."""
-    import yfinance as yf
-
-    from . import screener
-    q = yf.EquityQuery("and", [yf.EquityQuery("eq", ["region", "us"]), yf.EquityQuery("is-in", ["exchange", *screener.US_LISTED]),
-                               yf.EquityQuery("gte", ["intradaymarketcap", 200e6])])
-    out: list[str] = []
-    while True:
-        r = screener._screen(query=q, size=250, offset=len(out), sortField="intradaymarketcap", sortAsc=False)
-        got = [x["symbol"] for x in r.get("quotes") or []]
-        out += got
-        if len(got) < 250 or len(out) >= (r.get("total") or 0) or len(out) >= 9000:
-            return out
-
-
-def build_foreign() -> int:
-    """Read foreign companies from SEC one at a time; returns how many were read. A failed read keeps the old figures."""
-    d = load()
-    if not d:
-        return 0
-    foreign = dict(d.get("foreign", {}))
-    now = time.time()
-    todo = [c for c in foreign_candidates(d, _listed()) if now - foreign.get(c, {}).get("ts", 0) > FOREIGN_DAYS * 86400]
-    STATUS.update(state="reading foreign filers", done=0, of=len(todo))
-    try:
-        for c in todo:
-            try:
-                with sec._lock:
-                    r = requests.get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{c:010d}.json", headers=sec._ua(), timeout=60)
-                    time.sleep(0.15)
-                if r.status_code != 404:
-                    r.raise_for_status()
-                got = None if r.status_code == 404 else parse_ifrs(r.json())
-                foreign[c] = {**(got or {"raw": {}, "ends": {}, "cur": None}), "ts": now}
-            except (requests.RequestException, ValueError, KeyError) as e:
-                log.warning("foreign CIK %s: %s", c, e)
-            STATUS["done"] += 1
-    finally:
-        STATUS.update(state="ready")
-    _save({**d, "foreign": foreign, "foreign_at": now})
-    return len(todo)
-
-
-def company(d: dict[str, Any], ticker: str) -> tuple[dict[str, Any], dict[int, str], str, bool] | None:
-    """(raw lines, fiscal year-ends, currency, is foreign) for a ticker, from whichever source is newer."""
-    c = d["ciks"].get(ticker.upper().replace(".", "-"))
-    if not c:
-        return None
-    ends = d["ends"].get(c, {})
-    f = d.get("foreign", {}).get(c)
-    if f and f["ends"] and max(f["ends"].values()) > max(ends.values(), default=""):
-        return f["raw"], f["ends"], f["cur"], True
-    return (d["raw"][c], ends, "USD", False) if c in d["raw"] else None
 
 
 def load() -> dict[str, Any] | None:
@@ -275,12 +164,10 @@ def load() -> dict[str, Any] | None:
 def refresh_if_due() -> None:
     d = load()
     now = time.time()
+    if d and now - d["built"] < REFRESH_DAYS * 86400:
+        return
     try:
-        if not d or now - d["built"] >= REFRESH_DAYS * 86400:
-            build(full=not d or now - d.get("full", 0) > FULL_DAYS * 86400)
-        elif now - d.get("foreign_at", 0) < REFRESH_DAYS * 86400:
-            return
-        build_foreign()
+        build(full=not d or now - d.get("full", 0) > FULL_DAYS * 86400)
     except Exception as e:
         log.warning("history build failed: %s", e)
         STATUS.update(state="ready" if d else "failed", error=str(e)[:200])
@@ -296,8 +183,7 @@ def watch() -> None:
 
 def status() -> dict[str, Any]:
     d = load()
-    return {**STATUS, "built": d["built"] if d else None, "companies": len(d["raw"]) if d else 0,
-            "foreign": sum(1 for f in d.get("foreign", {}).values() if f["ends"]) if d else 0}
+    return {**STATUS, "built": d["built"] if d else None, "companies": len(d["raw"]) if d else 0}
 
 
 # ---------- per-company series and statistics ----------
@@ -406,14 +292,13 @@ def stat(s: dict[int, float], how: str, years: int, last: int) -> dict[str, Any]
     return {"v": v, "from": y0, "to": last, "a": vals[0], "b": vals[-1]}
 
 
-def last_year(ends: dict[int, str], s: dict[int, float], today: date | None = None,
-              stale: int = STALE_DAYS) -> int | None:
+def last_year(ends: dict[int, str], s: dict[int, float], today: date | None = None) -> int | None:
     """Newest fiscal year with this metric, if that year ended recently enough to screen on."""
     if not s:
         return None
     y = max(s)
     end = ends.get(y)
-    cutoff = ((today or date.today()) - timedelta(days=stale)).isoformat()
+    cutoff = ((today or date.today()) - timedelta(days=STALE_DAYS)).isoformat()
     return y if end and end >= cutoff else None
 
 
@@ -422,24 +307,22 @@ def value(ticker: str, metric: str, how: str, years: int, table: dict[str, Any] 
     d = table or load()
     if not d:
         return None
-    co = company(d, ticker)
-    if not co:
-        return None
-    raw, ends, cur, foreign = co
-    if cur in HYPERINFLATION and how in ("cagr", "up", "worst") and metric != "shares":
+    cik = d["ciks"].get(ticker.upper().replace(".", "-"))
+    raw = d["raw"].get(cik) if cik else None
+    if not raw:
         return None
     s = series(raw, metric)
-    last = last_year(ends, s, stale=STALE_FOREIGN if foreign else STALE_DAYS)
+    last = last_year(d["ends"].get(cik, {}), s)
     if last is None:
         return None
+    ends = d["ends"].get(cik, {})
     out = stat(s, how, years, last)
     if out and not window_ok(ends, out["from"], last, every=how not in ("cagr", "chg")):
         return None
     if out and metric in ("eps", "fcfps") and share_jump(raw, out["from"], last):
         return None
     if out:
-        out["end"], out["cur"], out["ifrs"] = ends.get(last), cur, foreign
-        out["late"] = bool(foreign and last_year(ends, s) is None)  # SEC feed is missing the newest year
+        out["end"] = ends.get(last)
     return out
 
 

@@ -91,10 +91,9 @@ function scrHist(i, k, v) {
 }
 function scrHistCell(v, h) {
   if (!v) return '<td class="num">--</td>';
-  const fx = v.cur && v.cur !== "USD" ? v.cur + " " : "$";
-  const raw = (x) => (h.kind === "ratio" ? n(x, 1) + "%" : ["eps", "fcfps"].includes(h.hist) ? fx + n(x, 2) : h.hist === "shares" ? n(x / 1e6, 1) + "M sh" : (x < 0 ? "-" : "") + bigN(Math.abs(x)).replace("$", fx));
+  const raw = (x) => (h.kind === "ratio" ? n(x, 1) + "%" : ["eps", "fcfps"].includes(h.hist) ? "$" + n(x, 2) : h.hist === "shares" ? n(x / 1e6, 1) + "M sh" : (x < 0 ? "-" : "") + bigN(Math.abs(x)));
   const shown = h.unit === "yrs" ? `${v.v}/${h.years}` : (h.stat === "chg" && v.v > 0 ? "+" : "") + n(v.v, 1) + (h.unit === "pts" ? "" : "%");
-  return `<td class="num ${h.stat === "cagr" || h.stat === "chg" ? cls(h.hist === "shares" ? -v.v : v.v) : ""}" title="FY${v.from} ${esc(raw(v.a))} to FY${v.to} ${esc(raw(v.b))} (year ended ${esc(v.end || "")}), SEC filings${v.ifrs ? ", IFRS" : ""}${v.late ? ". The SEC data feed has no newer year for this company" : ""}">${shown}${v.late ? ` <span class="amb small">FY${String(v.to).slice(2)}</span>` : ""}${fx !== "$" && h.kind !== "ratio" && h.hist !== "shares" ? ` <span class="dim small">${esc(v.cur)}</span>` : ""}</td>`;
+  return `<td class="num ${h.stat === "cagr" || h.stat === "chg" ? cls(h.hist === "shares" ? -v.v : v.v) : ""}" title="FY${v.from} ${esc(raw(v.a))} to FY${v.to} ${esc(raw(v.b))} (year ended ${esc(v.end || "")}), SEC filings">${shown}</td>`;
 }
 
 function scrResults() {
@@ -126,7 +125,7 @@ function scrResults() {
         ${["none", "tracked"].includes(x.coverage) ? `<button class="mini" onclick="openDrill('track:${esc(x.ticker)}')" title="Track">T</button><button class="mini" onclick="scrGate0('${esc(x.ticker)}')" title="Queue for Gate 0">G0</button>` : ""}</td></tr>`;
   }).join("");
   return head + `<table><tr><th>TKR</th><th>NAME</th><th>SECTOR</th><th class="num">MCAP</th>${(r.hist || []).map((h) => `<th class="num amb" style="white-space:normal;min-width:58px">${esc(h.label)}</th>`).join("")}<th class="num">P/E</th><th class="num">FWD</th><th class="num">EV/EBITDA</th><th class="num">ROE</th><th class="num">ND/EBITDA</th><th class="num">CUR</th><th class="num">BETA</th><th class="num">52W</th><th class="num">FROM HIGH</th><th>COV</th><th></th></tr>${rows || '<tr><td class="dim" colspan="${15 + (r.hist || []).length}">Nothing new: every match is already in your coverage. Switch to ALL to see them.</td></tr>'}</table>
-    <div class="cnote">⚠ = Yahoo and Robinhood disagree by more than 10% (hover for both). Ratios per row come from each company's profile; the screen itself runs on Yahoo's screener fields. Amber columns are multi-year figures from SEC annual reports (fiscal years; hover for the start and end values). Foreign companies are IFRS in their own currency; an amber FYxx tag means the SEC feed stops at that year. Acquisitions count as growth. Every name still goes through Gate 0.</div>`;
+    <div class="cnote">⚠ = Yahoo and Robinhood disagree by more than 10% (hover for both). Ratios per row come from each company's profile; the screen itself runs on Yahoo's screener fields. Amber columns are multi-year figures from SEC annual reports (fiscal years; hover for the start and end values). Acquisitions count as growth. Every name still goes through Gate 0.</div>`;
 }
 
 // ---------- editing ----------
