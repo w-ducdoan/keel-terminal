@@ -66,7 +66,8 @@ if (window.KEEL_PUBLIC) {
     scrResults = function () {
       return scrBase().replace(/<span>\d+ new · [^<]*<\/span>/, "")
         .replace(/<div class="small dim">Robinhood cross-check unavailable:[^<]*<\/div>/, "")
-        .replace("<th>COV</th>", "<th></th>");
+        .replace("<th>COV</th>", "<th></th>")
+        .replace(/^/, SCR.res?.source_note ? `<div class="small dim" style="margin-bottom:4px">${esc(SCR.res.source_note)}</div>` : "");
     };
   }
 

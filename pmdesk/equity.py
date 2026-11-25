@@ -80,11 +80,20 @@ def info(t: str) -> dict[str, Any]:
 
     try:
         out = cached(f"info:{t}", 6 * 3600, build)
-    except ValueError:
-        return {}
+    except Exception:  # no profile, or Yahoo refused (401 from cloud hosts): the fallback below fills in
+        out = {}
     if out.get("_partial"):  # use it now, ask again next time
         with _lock:
             _cache.pop(f"info:{t}", None)
+    if not out or out.get("_partial"):
+        # Yahoo gave nothing usable (it refuses its profile endpoint from cloud hosts): SEC, chart data, Wikipedia.
+        try:
+            from . import fallback
+            fb = cached(f"fbinfo:{t}", 12 * 3600, lambda: fallback.profile(t))
+            if fb:
+                out = {**fb, **{k: v for k, v in out.items() if v not in (None, "", []) and k != "_partial"}}
+        except Exception as e:
+            log.warning("fallback profile %s failed: %s", t, e)
     return out
 
 

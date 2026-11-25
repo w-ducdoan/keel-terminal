@@ -57,6 +57,13 @@ def members() -> list[dict[str, str]]:
 def quotes() -> dict[str, dict[str, Any]]:
     """Market cap and today's % move for every US-listed stock over $2B (Yahoo screener, paged)."""
     def run():
+        try:
+            return yahoo()
+        except Exception:  # Yahoo refuses its screener from cloud hosts: Keel's own table (SEC + chart data)
+            from . import fallback
+            return fallback.heat_quotes()
+
+    def yahoo():
         Q = yf.EquityQuery
         q = Q("and", [Q("eq", ["region", "us"]), Q("is-in", ["exchange", *screener.US_LISTED]), Q("gt", ["intradaymarketcap", 2e9])])
         out: dict[str, dict[str, Any]] = {}

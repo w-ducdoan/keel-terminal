@@ -45,6 +45,7 @@ def clean_json(x: Any) -> Any:
 def create_app(start_loop: bool = True) -> FastAPI:
     cfg = load_config()
     pub = public.enabled()
+    YAHOO_ONLY = {"anr": "Analyst ratings", "ee": "Earnings estimates", "hds": "Holder lists", "ins": "Insider transactions"}
     engine = public.PublicEngine(cfg) if pub else Engine(cfg)
     app = FastAPI(title="Keel", docs_url=None, redoc_url=None)
     app.state.engine = engine
@@ -375,6 +376,9 @@ def create_app(start_loop: bool = True) -> FastAPI:
             out = loaders[section]()
         except Exception as e:  # one panel fails, the rest of the page still loads
             out = {"ok": False, "error": f"{section.upper()} failed: {str(e)[:200]}"}
+        if pub and not out.get("ok") and section in YAHOO_ONLY:
+            out = {**out, "error": f"{YAHOO_ONLY[section]} come from Yahoo, which doesn't serve this public site (it blocks cloud servers). "
+                   "Run Keel on your own computer to see them."}
         return JSONResponse(clean_json({**out, "section": section, "ticker": t}))
 
     attr_cache: dict[str, tuple[float, Any]] = {}
@@ -679,6 +683,10 @@ def create_app(start_loop: bool = True) -> FastAPI:
             except Exception:
                 pass
             time.sleep(6 * 3600)
+
+    if start_loop and pub:  # public edition: build the SEC + price table in the background (Yahoo's screener is blocked there)
+        from . import fallback
+        threading.Thread(target=fallback.warm, daemon=True).start()
 
     if start_loop:
         threading.Thread(target=events_watch, daemon=True).start()

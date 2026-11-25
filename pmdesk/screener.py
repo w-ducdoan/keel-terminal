@@ -245,6 +245,7 @@ def run(spec: dict[str, Any], coverage: Callable[[str], dict[str, Any]], show: i
                 + (f" Last error: {st['error']}" if st.get("error") else "")}
     sort_key = str(spec.get("sort", "mcap"))
     sort = FIELDS.get(sort_key, FIELDS["mcap"])[1]
+    source = "yahoo"
     try:
         if hist:
             found, total = _all_matches(spec)
@@ -253,7 +254,16 @@ def run(spec: dict[str, Any], coverage: Callable[[str], dict[str, Any]], show: i
             found = r.get("quotes") or []
             total = r.get("total") or len(found)
     except Exception as e:
-        return {"ok": False, "error": f"Yahoo screener failed: {str(e)[:200]}"}
+        # Yahoo refuses its screener from cloud hosts: run the same criteria on Keel's own SEC + price table.
+        from . import fallback
+        try:
+            found, total = fallback.screen([c for c in _rows(spec) if not c.get("hist")], sort_key, bool(spec.get("asc")))
+            source = "sec"
+        except fallback.NotReady as nr:
+            return {"ok": False, "error": f"Yahoo's screener isn't reachable from this server, so Keel is building its own table from SEC "
+                    f"filings and price data ({nr}). The first build after a restart takes about 5-10 minutes; try again shortly."}
+        except Exception as e2:
+            return {"ok": False, "error": f"Yahoo screener failed ({str(e)[:100]}) and the SEC-based screen failed too ({str(e2)[:100]})."}
     quotes = [q for q in found if q.get("quoteType") == "EQUITY"]
     rows = []
     for q in quotes:
@@ -263,7 +273,7 @@ def run(spec: dict[str, Any], coverage: Callable[[str], dict[str, Any]], show: i
                      "mcap": q.get("marketCap"), "pe": q.get("trailingPE"), "fwd_pe": q.get("forwardPE"), "pb": q.get("priceToBook"),
                      "chg52": (q.get("fiftyTwoWeekChangePercent") or 0) / 100 if q.get("fiftyTwoWeekChangePercent") is not None else None,
                      "from_high": (last / hi - 1) if (last and hi) else None, "lo52": q.get("fiftyTwoWeekLow"), "hi52": hi,
-                     "divy": q.get("dividendYield")})
+                     "divy": q.get("dividendYield"), "_fb": q.get("_fb")})
     hist_info = None
     if hist:
         rows, hist_info = apply_history(rows, hist, table)
@@ -290,8 +300,10 @@ def run(spec: dict[str, Any], coverage: Callable[[str], dict[str, Any]], show: i
     shown = shown[:show]
     # Enrich the rows on screen: Yahoo profile ratios (in parallel) and Robinhood's market cap for a cross-check
     with ThreadPoolExecutor(max_workers=8) as ex:
-        for x, m in zip(shown, ex.map(lambda r_: _info_metrics(r_["ticker"]), shown)):
+        for x, m in zip(shown, ex.map(lambda r_: r_.get("_fb") or _info_metrics(r_["ticker"]), shown)):
             x.update({k: v for k, v in m.items() if v is not None})
+    for x in rows:
+        x.pop("_fb", None)
     try:
         rh: dict[str, Any] = {}
         syms = [x["ticker"] for x in shown]
@@ -320,7 +332,11 @@ def run(spec: dict[str, Any], coverage: Callable[[str], dict[str, Any]], show: i
            "hist_info": hist_info,
            "criteria": [{**c, "label": history.label(history.clean_row(c)) if c.get("hist") else FIELDS[c["field"]][0] if c.get("field") in FIELDS else "Sector", "unit": history.STATS[c["stat"]][2] if c.get("hist") else FIELDS[c["field"]][2] if c.get("field") in FIELDS else ""}
                         for c in _rows(spec)],
-           "looser": looser(spec), "robinhood_checked": rh_ok}
+           "looser": looser(spec), "robinhood_checked": rh_ok, "source": source}
+    if source == "sec":
+        out["source_note"] = ("Yahoo's screener isn't available on this server, so this ran on Keel's own table: the S&P 1500 plus "
+                              "US-listed foreign companies; ratios from each company's latest annual SEC report (foreign figures "
+                              "converted to dollars), prices and market caps from Yahoo chart data.")
     if not rh_ok:
         out["robinhood_error"] = rh_err
     return out
