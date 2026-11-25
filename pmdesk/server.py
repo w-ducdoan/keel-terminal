@@ -748,12 +748,21 @@ def create_app(start_loop: bool = True) -> FastAPI:
                 closes = h["Close"]
                 closes.index = [i.date().isoformat() for i in closes.index]
                 cur = out.get("currency") or "USD"
-                if cur != "USD":  # US-listed price, foreign-currency statements: put the price in their currency
-                    fxh = yf.Ticker(f"{cur}USD=X").history(period="max", interval="1d")["Close"]
-                    fxh.index = [i.date().isoformat() for i in fxh.index]
-                    fxs = fxh.reindex(sorted(set(fxh.index) | set(closes.index))).ffill().reindex(closes.index)
-                    closes = (closes / fxs).dropna()
-                    out["valuation_note"] = f"Price converted to {cur} at each date's {cur}/USD rate so multiples match the statements."
+                pcur = (getattr(yf.Ticker(market.yahoo_symbol(t)), "history_metadata", {}) or {}).get("currency") or "USD"
+                if pcur in ("GBp", "GBX", "ZAc", "ILA"):  # quoted in pence / cents
+                    closes, pcur = closes / 100, {"GBp": "GBP", "GBX": "GBP", "ZAc": "ZAR", "ILA": "ILS"}[pcur]
+
+                def usd_rate(c: str):  # dollars per unit of c, by date
+                    if c == "USD":
+                        return None
+                    s = yf.Ticker(f"{c}USD=X").history(period="max", interval="1d")["Close"]
+                    s.index = [i.date().isoformat() for i in s.index]
+                    return s.reindex(sorted(set(s.index) | set(closes.index))).ffill().reindex(closes.index)
+                if cur != pcur:  # price and statements in different currencies: put the price in the statements' currency
+                    p_usd, s_usd = usd_rate(pcur), usd_rate(cur)
+                    closes = closes * (p_usd if p_usd is not None else 1) / (s_usd if s_usd is not None else 1)
+                    closes = closes.dropna()
+                    out["valuation_note"] = f"Price converted from {pcur} to {cur} at each date's exchange rate so multiples match the statements."
                 # Dual-class filers tag one class on the cover page; scale to Yahoo's all-class count when it is clearly larger
                 scale = 1.0
                 shout = next((r for r in out["statements"].get("balance", []) if r["key"] == "shout"), None)

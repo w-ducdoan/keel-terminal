@@ -88,7 +88,8 @@ def yahoo_symbol(sym: str) -> str:
     """Robinhood writes share classes with a dot (BRK.B); Yahoo uses a dash (BRK-B).
     Exchange suffixes (DX-Y.NYB, 000001.SS, FTSEMIB.MI) are left alone."""
     import re
-    return sym.replace(".", "-") if re.fullmatch(r"[A-Z]{1,5}\.[A-Z]", sym) else sym
+    # One-letter exchange suffixes are not share classes: London (SHEL.L) and Frankfurt (SAP.F) keep the dot
+    return sym.replace(".", "-") if re.fullmatch(r"[A-Z]{1,5}\.[A-EG-KM-Z]", sym) else sym
 
 
 def history(symbols: list[str], period: str = "2y") -> pd.DataFrame:

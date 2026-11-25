@@ -153,6 +153,10 @@ def fx_usd(cur: str | None) -> float | None:
     """Dollars per one unit of a currency, today (Yahoo chart)."""
     if not cur or cur == "USD":
         return 1.0
+    minor = {"GBp": "GBP", "GBX": "GBP", "ZAc": "ZAR", "ILA": "ILS"}
+    if cur in minor:  # pence / cents
+        base = fx_usd(minor[cur])
+        return base / 100 if base else None
 
     def run():
         for sym, inv in ((f"{cur}USD=X", False), (f"{cur}=X", True)):
@@ -661,7 +665,7 @@ def wikidata(qid: str) -> dict[str, Any]:
                                "languages": "en", "format": "json"}, headers=WIKI_UA, timeout=15).json()["entities"]
             names = [lab[i]["labels"].get("en", {}).get("value") for i in ids]
             hq = val("P159")
-            if isinstance(hq, dict) and hq.get("id") == ids[0]:
+            if isinstance(hq, dict) and hq.get("id") == ids[0] and names[0] and not re.match(r"(?i)(headquarters|head office|tower|building)", names[0]):
                 out["city"] = names[0]
             out["country"] = names[-1] if len(ids) > 1 or not out.get("city") else None
             if ids_ind:
@@ -689,10 +693,19 @@ def profile(t: str) -> dict[str, Any]:
     if kind != "EQUITY":
         return out if out.get("longName") or px else {}
     mcap = market_cap(t)
-    out["marketCap"] = mcap
+    minor = {"GBp": ("GBP", 100), "GBX": ("GBP", 100), "ZAc": ("ZAR", 100), "ILA": ("ILS", 100)}.get(meta.get("currency") or "")
+    out["marketCap"] = mcap / minor[1] if (mcap and minor) else mcap  # shown in pounds, not pence
+    if minor:
+        out["currency"] = minor[0]
     # SEC: profile and the latest annual report (US GAAP or IFRS, in dollars)
     f, sub = None, {}
     cik = sec.cik(t)
+    from . import esef
+    if not cik and esef.is_eu(t):  # EU / UK listing: annual reports in ESEF
+        try:
+            f = from_statements(sec.statements(t))
+        except Exception as e:
+            log.debug("esef %s: %s", t, e)
     if cik:
         try:
             from . import sec_events
@@ -717,6 +730,12 @@ def profile(t: str) -> dict[str, Any]:
             out.update({"sector": x["sector"], "industry": x["industry"]})
             break
     w = wiki(out.get("longName") or "")
+    if not w and out.get("longName"):  # long or accented legal names: retry with the plain short form
+        from .esef import name_variants
+        for alt in name_variants(out["longName"])[1:4]:
+            w = wiki(alt)
+            if w:
+                break
     out.update({"longBusinessSummary": w.get("summary"), "fullTimeEmployees": w.get("employees"),
                 "website": out.get("website") or w.get("website")})
     for k in ("city", "country", "industry"):

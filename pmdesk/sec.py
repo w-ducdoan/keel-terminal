@@ -89,9 +89,9 @@ IS = [
     ("pretax", "Pretax income", ["IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest", "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments", "ProfitLossBeforeTax"], 0, True),
     ("tax", "Income tax", ["IncomeTaxExpenseBenefit", "IncomeTaxExpenseContinuingOperations"], 1, False),
     ("ni", "Net income (to common)", ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic", "ProfitLoss", "ProfitLossAttributableToOwnersOfParent"], 0, True),
-    ("eps", "Diluted EPS", ["EarningsPerShareDiluted", "DilutedEarningsLossPerShare"], 0, False),
-    ("eps_b", "Basic EPS", ["EarningsPerShareBasic", "BasicEarningsLossPerShare"], 1, False),
-    ("shares", "Diluted shares", ["WeightedAverageNumberOfDilutedSharesOutstanding", "AdjustedWeightedAverageShares"], 0, False),
+    ("eps", "Diluted EPS", ["EarningsPerShareDiluted", "DilutedEarningsLossPerShare", "DilutedEarningsLossPerShareFromContinuingOperations"], 0, False),
+    ("eps_b", "Basic EPS", ["EarningsPerShareBasic", "BasicEarningsLossPerShare", "BasicEarningsLossPerShareFromContinuingOperations"], 1, False),
+    ("shares", "Diluted shares", ["WeightedAverageNumberOfDilutedSharesOutstanding", "AdjustedWeightedAverageShares", "WeightedAverageShares"], 0, False),
     ("sbc", "Stock-based compensation", ["ShareBasedCompensation", "AllocatedShareBasedCompensationExpense", "ExpenseFromSharebasedPaymentTransactionsWithEmployees"], 1, False),
     ("div_ps", "Dividends per share", ["CommonStockDividendsPerShareDeclared", "CommonStockDividendsPerShareCashPaid", "DividendsRecognisedAsDistributionsToOwnersPerShare"], 1, False),
 ]
@@ -222,12 +222,23 @@ def _pick(gaap: dict[str, Any], dei: dict[str, Any], tags: list[str], kind: str,
 
 
 def statements(ticker: str, years: int = 12, quarters: int = 16) -> dict[str, Any]:
+    from . import esef
     try:
         f = facts(ticker)
     except NoContact as e:
-        return {"ok": False, "error": str(e), "needs_contact": True}
+        if not esef.is_eu(ticker):
+            return {"ok": False, "error": str(e), "needs_contact": True}
+        f = None
     except Exception as e:
         return {"ok": False, "error": f"SEC request failed: {str(e)[:160]}"}
+    if not f and esef.is_eu(ticker):  # EU / UK listing: its annual reports in ESEF (filings.xbrl.org)
+        try:
+            f = esef.facts(ticker)
+        except Exception as e:
+            return {"ok": False, "error": f"European filings lookup failed: {str(e)[:160]}"}
+        if not f:
+            return {"ok": False, "error": f"No ESEF annual reports found for {ticker} on filings.xbrl.org (or its company couldn't be matched; "
+                                          "pin it in config/lei_overrides.yaml)."}
     if not f:
         return {"ok": False, "error": f"{ticker} has no XBRL filings on SEC (foreign filer, fund or not SEC-registered)."}
     fx = f.get("facts", {})
@@ -274,7 +285,19 @@ def statements(ticker: str, years: int = 12, quarters: int = 16) -> dict[str, An
                       "Q": {e: s["Q"][e] for e in q_ends if e in s["Q"]}})
     out["all_tags"] = sorted(extra, key=lambda x: x["label"])[:600]
     out["filings_url"] = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={f.get('cik')}&type={'10-K' if standard == 'US GAAP' else '20-F'}"
-    if standard == "IFRS":
+    if f.get("source") == "ESEF":
+        out["source"] = "ESEF"
+        out["lei"] = f.get("lei")
+        latest = (f.get("filings") or [{}])[0]
+        out["filings_url"] = latest.get("viewer") or f"https://filings.xbrl.org/?entity={f.get('lei')}"
+        out["note"] = (f"Source: annual reports in ESEF (the format EU and UK listed companies file with their national regulator), "
+                       f"from filings.xbrl.org; reporting in {cur}. Annual figures only (European filers don't tag quarterly results); "
+                       "standard IFRS lines only, so items a company tags under its own names show as missing.")
+    elif str(f.get("source", "")).startswith("SEC (dual"):
+        out["source"] = "SEC"
+        out["note"] = (f"This listing's company also files with SEC (US ticker {f.get('sec_ticker')}): figures are from those filings, "
+                       f"{standard}, reporting in {cur}.")
+    elif standard == "IFRS":
         out["note"] = (f"IFRS filer reporting in {cur}: annual figures from the 20-F; foreign filers do not tag quarterly "
                        "results in XBRL, so quarters are thin or missing. Line names follow IFRS (e.g. finance costs for interest).")
     return out
@@ -446,6 +469,8 @@ def valuation(st: dict[str, Any], prices: Any, share_scale: float = 1.0) -> list
 
     def shares(k: str, e: str) -> float | None:
         s = val("shout", k, e) or val("shares", k, e) or (val("shares", "Q", e) if k == "A" else None)
+        if not s and val("ni", k, e) and val("eps", k, e):  # no share count tagged (some IFRS filers): net income / EPS
+            s = val("ni", k, e) / val("eps", k, e) if val("ni", k, e) / val("eps", k, e) > 0 else None
         return s * share_scale if s else None
 
     out = {}
