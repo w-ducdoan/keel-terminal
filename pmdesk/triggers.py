@@ -249,6 +249,10 @@ def build(ctx: dict[str, Any]) -> list[dict[str, Any]]:
     for wmsg in ctx.get("warnings", [])[:5]:
         actions.append(_action("data_" + hashlib.md5(wmsg.encode()).hexdigest()[:8], "watch", None, "Data check", wmsg))
 
+    # 15. ALT: a signal you promoted moved far outside its own history
+    for c in ctx.get("alt_cards", []):
+        actions.append(_action("alt", "review", c["ticker"], c["title"], c["detail"]) | {"id": c["id"], "type": "alt_" + c["id"][4:]})
+
     # Apply acknowledgements and snoozes
     states = ctx.get("states", {})
     now = datetime.now(timezone.utc).isoformat()

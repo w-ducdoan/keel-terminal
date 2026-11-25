@@ -26,7 +26,7 @@ if (window.KEEL_PUBLIC) {
   for (const k of ["ATTR", "TRIP", "SI", "THEME"]) delete FN[k];
   for (const k of Object.keys(BOOK_CODES)) delete BOOK_CODES[k];
   delete FN_LINKS.PORT;
-  for (const k of ["THESIS", "SI", "ERN"]) delete SECFN[k];
+  for (const k of ["THESIS", "SI", "ERN", "ALT"]) delete SECFN[k];
   for (const c of Object.keys(CLASS_FNS)) CLASS_FNS[c] = CLASS_FNS[c].filter((f) => SECFN[f]);
   for (const s of ["cockpit", "rh", "ern"]) { const i = DES_SECTIONS.indexOf(s); if (i >= 0) DES_SECTIONS.splice(i, 1); }
   for (let i = DES_PANELS.length - 1; i >= 0; i--) if (["cockpit", "ern"].includes(DES_PANELS[i][0])) DES_PANELS.splice(i, 1);

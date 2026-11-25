@@ -95,6 +95,8 @@ function secPaint(key) {
     html = chartSlot(t, "sw-gp", 360, "1Y");
   } else if (fn === "SI") {
     html = siWinBody(t, w.opt?.what || "pct");
+  } else if (fn === "ALT" && typeof altWinBody === "function") {
+    html = altWinBody(t);
   } else if (f && f[1]) {
     const shown = f[1][0];
     html = `<div data-weq="${shown}" data-wt="${esc(t)}">${desBody(shown, t)}</div>`;

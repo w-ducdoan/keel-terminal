@@ -64,7 +64,7 @@ function newsWhen(iso) {
 }
 
 // ---------- WHY: what moved the price at a chart point ----------
-const canWhy = (sym) => sym && sym !== "BOOK" && !/^(FRED|SI:|SIP:|DTC:)/.test(sym);
+const canWhy = (sym) => sym && sym !== "BOOK" && !/^(FRED|SI:|SIP:|DTC:|ALT:)/.test(sym);
 const etDay = (iso) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 const addDays = (ymd, k) => { const d = new Date(ymd + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + k); return d.toISOString().slice(0, 10); };
 /** The bar's own window: previous point's day + 1 -> this point's day (a weekly bar covers its week). */

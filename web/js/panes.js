@@ -48,7 +48,7 @@ function actRoute(id) {
   const x = (S.actions || []).find((y) => y.id === id);
   if (!x) return false;
   if (x.ticker) {
-    const fn = x.type.startsWith("sec_") ? "CN" : ACT_FN[x.type] || "DES";
+    const fn = x.type.startsWith("sec_") ? "CN" : x.type.startsWith("alt_") ? "ALT" : ACT_FN[x.type] || "DES";
     openSec(x.ticker, fn, { act: id });
     return true;
   }

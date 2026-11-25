@@ -17,7 +17,7 @@ async function getSeries(sym, rng) {
 // Compare: other tickers drawn on the same chart, all rebased to 0% at the start of the range.
 const CMP_COLORS = ["var(--blue)", "#c9a0ff", "#4fd1c5"];
 const cmpList = (key) => (lsGet("cmp:" + key) || "").split(",").filter(Boolean);
-const canCompare = (sym) => !/^(FRED|SI:|SIP:|DTC:)/.test(sym);  // levels and metrics, not prices: nothing to rebase against
+const canCompare = (sym) => !/^(FRED|SI:|SIP:|DTC:|ALT:)/.test(sym);  // levels and metrics, not prices: nothing to rebase against
 function cmpBar(sym, key) {
   if (!canCompare(sym)) return "";
   const list = cmpList(key);
@@ -65,7 +65,7 @@ function drawSeries(el, d, comps = []) {
   if (comps.length) return drawCompare(el, pts, comps);
   // Rates and spreads change in points or basis points; a % change of a yield means nothing.
   const sym = el.dataset.sym, isYield = /^(FREDID:DGS|FREDID:DFII|FREDID:T10Y|FREDID:SOFR|FREDID:DFF|\^(TNX|TYX|FVX|IRX)$)/.test(sym);
-  const isLevel = sym.startsWith("FRED");
+  const isLevel = sym.startsWith("FRED") || sym.startsWith("ALT:");
   el.dataset.unit = isYield ? "bp" : isLevel ? "pts" : "pct";
   chg.className = "chg " + cls(d.change);
   const move = isYield ? `${d.change > 0 ? "+" : ""}${n(d.change * 100, 0)} bp` : isLevel ? `${d.change > 0 ? "+" : ""}${n(d.change)}` : `${d.change > 0 ? "+" : ""}${n(d.change)}  (${spct(d.change_pct)})`;

@@ -117,6 +117,15 @@ def create_app(start_loop: bool = True) -> FastAPI:
                         or not re.fullmatch(r"[0-9.]*", sc)):
                     raise HTTPException(400, "Bad FRED id")
                 out = series.fred_series(body, sid, float(sc or 1), rng, transform_name=tf or "level")
+            elif symbol.startswith("ALT:"):  # an ALT series by id, e.g. ALT:eia860m:solar_12m
+                from . import altdata
+                s_ = altdata.db.series(symbol[4:])
+                m_ = altdata.db.series_meta(symbol[4:]) or {}
+                if s_.empty:
+                    raise HTTPException(404, "No data for that ALT series")
+                days = {"1D": 31, "5D": 92, "1M": 92, "3M": 183, "6M": 366, "YTD": 366, "1Y": 731, "5Y": 1830, "MAX": 100000}[rng]
+                s_ = s_[s_.index >= s_.index.max() - pd.Timedelta(days=days)]
+                out = series._summary(symbol, rng, "1d", s_, f"{m_.get('source', '')}: {m_.get('title', '')} ({m_.get('unit', '')})")
             elif symbol.split(":")[0] in ("SI", "SIP", "DTC"):
                 kind, t = symbol.split(":", 1)
                 if not equity.TICKER.match(t.upper()):
@@ -223,6 +232,51 @@ def create_app(start_loop: bool = True) -> FastAPI:
             return JSONResponse(clean_json({"ok": True, "results": equity.lookup(q)}))
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)[:200], "results": []})
+
+    # ---------- ALT: alternative data found per company and tested against its revenue ----------
+    @app.get("/api/alt")
+    def get_alt_book() -> JSONResponse:
+        """ALT across the book, watchlist and tracking list: counts by status and the biggest recent moves."""
+        from . import altdata
+        tick = alt_tickers()
+        rows = []
+        for t in tick:
+            v = altdata.view(t)
+            sig = v["signals"]
+            rows.append({"ticker": t, "counts": {k: sum(1 for s in sig if s["shown_status"] == k) for k in
+                                                  ("active", "proposed", "context", "weak", "needs_key", "untested", "rejected")},
+                         "top": [{k: s.get(k) for k in ("series_id", "title", "shown_status", "label", "z", "fit", "lead")} for s in sig
+                                 if s["shown_status"] in ("active", "proposed", "context")][:4]})
+        return JSONResponse(clean_json({"ok": True, "rows": rows}))
+
+    @app.get("/api/alt/{ticker}")
+    def get_alt(ticker: str) -> JSONResponse:
+        from . import altdata
+        t = ticker.upper()
+        if not equity.TICKER.match(t):
+            raise HTTPException(400, "Not a ticker")
+        return JSONResponse(clean_json(altdata.view(t)))
+
+    @app.post("/api/alt/{ticker}/discover")
+    def run_alt(ticker: str) -> dict[str, Any]:
+        """Find, pull and test candidates for one name now (in the background; the window polls)."""
+        from . import altdata
+        t = ticker.upper()
+        if not equity.TICKER.match(t):
+            raise HTTPException(400, "Not a ticker")
+        threading.Thread(target=altdata.discover, args=(t,), daemon=True).start()
+        return {"ok": True, "started": True}
+
+    @app.post("/api/alt/{ticker}/signal")
+    def set_alt(ticker: str, payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        """Your call on a signal: active (promote), dismissed, or null (back to Keel's own verdict)."""
+        from . import altdata
+        st = payload.get("status")
+        if st not in ("active", "dismissed", None):
+            raise HTTPException(400, "status must be active, dismissed or null")
+        altdata.db.set_user_status(ticker.upper(), str(payload.get("series_id") or ""), st)
+        engine.poke()
+        return {"ok": True}
 
     @app.get("/api/equity/{ticker}/card")
     def get_card(ticker: str) -> JSONResponse:
@@ -683,6 +737,15 @@ def create_app(start_loop: bool = True) -> FastAPI:
             except Exception:
                 pass
             time.sleep(6 * 3600)
+
+    def alt_tickers() -> list[str]:
+        snap = engine.snapshot()
+        tick = [p["ticker"] for p in snap.get("positions", [])] + [w["ticker"] for w in snap.get("watchlist", [])] + [x["ticker"] for x in store.tracked()]
+        return [x for x in dict.fromkeys(tick) if x and x != "BRK.B"]
+
+    if start_loop and not pub:  # ALT discovery once a night for every name (private Keel only)
+        from . import altdata
+        threading.Thread(target=altdata.watch, args=(alt_tickers,), daemon=True).start()
 
     if start_loop and pub:  # public edition: build the SEC + price table in the background (Yahoo's screener is blocked there)
         from . import fallback

@@ -39,6 +39,15 @@ def _ern(t: str, e: dict[str, Any]) -> dict[str, Any] | None:
     return x if x and x.get("date") == e.get("date") else None
 
 
+def _alt_cards() -> list[dict[str, Any]]:
+    """DO TODAY cards from promoted ALT signals that moved far outside their history (never breaks a refresh)."""
+    try:
+        from . import altdata
+        return altdata.cards()
+    except Exception:
+        return []
+
+
 class Engine:
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
@@ -331,7 +340,7 @@ class Engine:
             "earnings": self.earnings, "digest": digest, "recon": [], "warnings": warnings,  # recon lives in RECONCILE
             "sec_events": store.sec_events((today - timedelta(days=3)).isoformat()),
             "beta_overrides": cfg.overrides.get("beta_overrides") or {}, "states": store.action_states(),
-            "tripwires": trips,
+            "tripwires": trips, "alt_cards": _alt_cards(),
         })
 
         # Book-level P&L

@@ -80,6 +80,7 @@ function bookPaint(keepScroll = false) {
   } else if (fn === "ATTR") { html = `<div data-attr>${attrBody()}</div>`; loadAttr(); }
   else if (fn === "TRIP") { html = `<div data-trip>${tripBody()}</div>`; }
   else if (fn === "SI") { html = `<div data-crowd>${crowdBody()}</div>`; loadCrowd(); }
+  else if (fn === "ALT" && typeof altBookBody === "function") html = altBookBody();
   else if (fn === "THEME") {
     if (o.i != null && THM?.ok) html = `<button class="mini" onclick="openBook('THEME')" style="margin-bottom:6px">All themes</button>` + viewBody(DRILL.theme(o.i));
     else { html = `<div data-themes>${themesBody()}</div>`; loadThemes(); }

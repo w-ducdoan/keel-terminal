@@ -424,3 +424,8 @@ tr.clk { cursor: pointer; } tr.clk:hover td { background: var(--hl); }
 .kpis[hidden], .tape[hidden] { display: none !important; }
 body.public button[onclick^="scrSave"], body.public button[onclick^="scrDelete"], body.public button[onclick^="scrGate0"],
 body.public [data-scr] button[onclick^="openDrill('track:"], body.public [data-scr] td > .tag, body.public [data-scr] button[onclick^="SCR.showAll"] { display: none !important; }
+
+/* ALT */
+.altrow { border-bottom: 1px solid var(--line); padding: 6px 4px; cursor: pointer; }
+.altrow:hover, .altrow.on { background: var(--hl); }
+.altgrp summary { cursor: pointer; }
