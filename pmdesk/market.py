@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import pandas as pd
@@ -133,10 +133,36 @@ def fred_key() -> str | None:
     return key or None
 
 
+def fred_csv(series: str, start: str | None = None) -> list[tuple[str, float]]:
+    """FRED's public CSV download (no API key): [(YYYY-MM-DD, value)] oldest first. Used when no key is set,
+    so the curve, spreads and macro series still fill on a copy that has no FRED key (the public edition)."""
+    params = {"id": series}
+    if start:
+        params["cosd"] = start
+    r = requests.get("https://fred.stlouisfed.org/graph/fredgraph.csv", params=params, timeout=25,
+                     headers={"User-Agent": "Mozilla/5.0 (Keel market terminal)"})
+    r.raise_for_status()
+    out = []
+    for line in r.text.splitlines()[1:]:
+        d, _, v = line.partition(",")
+        try:
+            out.append((d.strip(), float(v)))
+        except ValueError:  # "." = no value that day
+            continue
+    return out
+
+
 def fred_latest(series: str) -> dict[str, Any] | None:
     key = fred_key()
     if not key:
-        return None
+        try:
+            obs = fred_csv(series, (date.today() - timedelta(days=400)).isoformat())
+        except Exception as e:
+            log.warning("FRED CSV %s failed: %s", series, e)
+            return None
+        if not obs:
+            return None
+        return {"last": obs[-1][1], "prev": obs[-2][1] if len(obs) > 1 else None, "date": obs[-1][0]}
     try:
         r = requests.get(
             "https://api.stlouisfed.org/fred/series/observations",

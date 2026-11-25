@@ -67,7 +67,7 @@ class PublicEngine:
 
     def _fred(self) -> None:
         today = date.today().isoformat()
-        if (self.fred and store.kv_get("fred_day") == today) or not market.fred_key():
+        if self.fred and store.kv_get("fred_day") == today:  # no key: market.fred_latest reads the public CSV
             return
         out = {}
         for s in self.cfg.settings.get("fred", []):

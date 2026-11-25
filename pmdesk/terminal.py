@@ -29,8 +29,8 @@ FRED_URL = "https://api.stlouisfed.org/fred"
 
 def fred_obs(series: str, start: date) -> pd.Series:
     key = market.fred_key()
-    if not key:
-        return pd.Series(dtype=float)
+    if not key:  # no key: FRED's public CSV
+        return pd.Series({pd.Timestamp(d): v for d, v in market.fred_csv(series, start.isoformat())}, dtype=float).sort_index()
     r = requests.get(f"{FRED_URL}/series/observations", params={
         "series_id": series, "api_key": key, "file_type": "json", "observation_start": start.isoformat()}, timeout=20)
     r.raise_for_status()

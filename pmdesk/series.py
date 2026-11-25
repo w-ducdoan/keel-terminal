@@ -104,16 +104,17 @@ def fred_series(label: str, series_id: str, scale: float, rng: str, transform_na
 
     def build() -> dict[str, Any]:
         key = market.fred_key()
-        if not key:
-            return _summary(label, rng, "1d", pd.Series(dtype=float), "No FRED key set.")
         start = date(date.today().year, 1, 1) if rng == "YTD" else date.today() - timedelta(days=FRED_DAYS[rng])
         fetch_from = start - timedelta(days=400) if transform_name != "level" else start
-        r = requests.get("https://api.stlouisfed.org/fred/series/observations",
-                         params={"series_id": series_id, "api_key": key, "file_type": "json",
-                                 "observation_start": fetch_from.isoformat()}, timeout=20)
-        r.raise_for_status()
-        obs = [o for o in r.json().get("observations", []) if o.get("value") not in (".", None)]
-        s = pd.Series({pd.Timestamp(o["date"]): float(o["value"]) for o in obs}, dtype=float).sort_index()
+        if key:
+            r = requests.get("https://api.stlouisfed.org/fred/series/observations",
+                             params={"series_id": series_id, "api_key": key, "file_type": "json",
+                                     "observation_start": fetch_from.isoformat()}, timeout=20)
+            r.raise_for_status()
+            obs = [(o["date"], float(o["value"])) for o in r.json().get("observations", []) if o.get("value") not in (".", None)]
+        else:  # no key: FRED's public CSV
+            obs = market.fred_csv(series_id, fetch_from.isoformat())
+        s = pd.Series({pd.Timestamp(d): v for d, v in obs}, dtype=float).sort_index()
         s = transform(s, transform_name) * scale
         s = s[s.index >= pd.Timestamp(start)] if rng not in ("1D", "5D") else s
         gap = (s.index[1] - s.index[0]).days if len(s) > 1 else 1
