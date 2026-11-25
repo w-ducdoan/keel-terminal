@@ -139,7 +139,7 @@ def fred_csv(series: str, start: str | None = None) -> list[tuple[str, float]]:
     params = {"id": series}
     if start:
         params["cosd"] = start
-    r = requests.get("https://fred.stlouisfed.org/graph/fredgraph.csv", params=params, timeout=25,
+    r = requests.get("https://fred.stlouisfed.org/graph/fredgraph.csv", params=params, timeout=15,
                      headers={"User-Agent": "Mozilla/5.0 (Keel market terminal)"})
     r.raise_for_status()
     out = []

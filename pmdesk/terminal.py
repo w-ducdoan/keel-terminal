@@ -29,8 +29,14 @@ FRED_URL = "https://api.stlouisfed.org/fred"
 
 def fred_obs(series: str, start: date) -> pd.Series:
     key = market.fred_key()
-    if not key:  # no key: FRED's public CSV
-        return pd.Series({pd.Timestamp(d): v for d, v in market.fred_csv(series, start.isoformat())}, dtype=float).sort_index()
+    if not key:  # no key: FRED's public CSV (slower, and it can time out from cloud hosts): retry once, then skip this series
+        for attempt in range(2):
+            try:
+                return pd.Series({pd.Timestamp(d): v for d, v in market.fred_csv(series, start.isoformat())}, dtype=float).sort_index()
+            except Exception as e:
+                if attempt:
+                    log.warning("FRED CSV %s failed: %s", series, e)
+        return pd.Series(dtype=float)
     r = requests.get(f"{FRED_URL}/series/observations", params={
         "series_id": series, "api_key": key, "file_type": "json", "observation_start": start.isoformat()}, timeout=20)
     r.raise_for_status()
