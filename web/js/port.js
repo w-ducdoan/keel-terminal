@@ -379,9 +379,9 @@ function fundViewHTML(d) {
                  ["Vs " + esc(d.prev_quarter || "prior"), `<span class="pos">${c.new} new · ${c.added} added</span> · <span class="amb">${c.trimmed} trimmed</span> · <span class="neg">${c.exited} exited</span>`]])}
       <div style="margin:6px 0">${tracked ? '<span class="dim small">Tracked in your 13F panel.</span>' : `<button class="mini" onclick="f13Post({name: ${esc(JSON.stringify(d.name))}, cik: ${d.cik}}).then(() => WINS.FLNG ? winPaint('FLNG') : openDrill('f13fund:${d.cik}|'))">+ Track this fund</button>`}
         <a class="mini" href="${esc(d.url)}" target="_blank" rel="noopener">Filings on SEC</a></div>
-      <table><tr><th>#</th><th>TICKER</th><th>COMPANY</th><th class="num">% OF 13F</th><th class="num">VALUE</th><th>CHANGE</th></tr>
+      <table class="sortable" data-sortkey="f13fund"><tr><th>#</th><th>TICKER</th><th>COMPANY</th><th class="num">% OF 13F</th><th class="num">VALUE</th><th>CHANGE</th></tr>
       ${d.rows.map((r, i) => `<tr ${r.ticker ? `data-drill="tkr:${esc(r.ticker)}"` : ""}><td class="dim">${i + 1}</td><td class="amb">${esc(r.ticker || "")}${r.ticker && mine.has(r.ticker) ? ' <span class="dtag" style="color:var(--pos);border-color:var(--pos)">YOURS</span>' : ""}</td>
-        <td>${esc(r.issuer)}</td><td class="num">${pct(r.pct, 1)}</td><td class="num">${bigUsd(r.value)}</td><td>${actTag(r.action, r.share_chg)}</td></tr>`).join("")}</table>
+        <td>${esc(r.issuer)}</td><td class="num" data-v="${r.pct ?? ""}">${pct(r.pct, 1)}</td><td class="num" data-v="${r.value ?? ""}">${bigUsd(r.value)}</td><td data-v="${r.action === "new" ? 1e6 : r.action === "exited" ? -1e6 : r.share_chg ?? 0}">${actTag(r.action, r.share_chg)}</td></tr>`).join("")}</table>
       ${d.exits.length ? `<div class="sec2">EXITED SINCE ${esc(d.prev_quarter || "")}</div><div class="small">${d.exits.map((e) => `${e.ticker ? `<b class="amb">${esc(e.ticker)}</b> ` : ""}${esc(e.issuer)} <span class="dim">(${bigUsd(e.prev_value)})</span>`).join(" · ")}</div>` : ""}
       <div class="cnote">Long US positions at quarter end only (13Fs leave out shorts, cash and non-US holdings), filed up to 45 days later. Tickers are matched by company name; options lines are left out.</div>`;
 }

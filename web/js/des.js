@@ -284,9 +284,9 @@ function bodyHds(t) {
   const tab = dTab("hds:tab", "Institutions"), list = tab === "Funds" ? d.funds : d.institutions, s = d.summary || {};
   const p = posBy(t);
   return tabBar("hds:tab", ["Institutions", "Funds"], tab) + `<div class="small" style="margin:3px 0">Institutions hold <b>${dPct(s.institutionsPercentHeld)}</b> (${s.institutionsCount ? n(s.institutionsCount, 0) + " holders" : "--"}) · insiders <b>${dPct(s.insidersPercentHeld, 2)}</b>${p ? ` · you hold <b class="amb">${n(p.shares, 4)} sh</b> (${d.shares_out ? (p.shares / d.shares_out * 1e6).toFixed(3) + " per million" : "--"})` : ""}</div>
-    <table><tr><th>HOLDER</th><th class="num">SHARES</th><th class="num">% OUT</th><th class="num">VALUE</th><th class="num">CHG</th><th class="num">AS OF</th></tr>
-    ${(list || []).map((h) => `<tr><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${esc(h.holder)}">${esc(h.holder)}</td><td class="num">${dCnt(h.shares)}</td><td class="num">${dPct(h.pct, 2)}</td><td class="num">${dBig(h.value)}</td><td class="num ${cls(h.chg)}">${spct(h.chg, 1)}</td><td class="num dim">${esc(fmtDate(h.date))}</td></tr>`).join("") || '<tr><td class="dim">None.</td></tr>'}</table>
-    <div class="cnote">Top 10 from the latest 13F and fund filings (Yahoo). CHG = change in shares last period.</div>`;
+    <table class="sortable" data-sortkey="hds"><tr><th>HOLDER</th><th class="num">SHARES</th><th class="num">% OUT</th><th class="num">VALUE</th><th class="num">CHG</th><th class="num">AS OF</th></tr>
+    ${(list || []).map((h) => `<tr class="clk" data-holder="${esc(h.holder)}" data-hk="${tab === "Funds" ? "fund" : "inst"}" title="${tab === "Funds" ? "Open this fund" : "Open this holder's 13F"}"><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${esc(h.holder)}">${esc(h.holder)}</td><td class="num">${dCnt(h.shares)}</td><td class="num">${dPct(h.pct, 2)}</td><td class="num">${dBig(h.value)}</td><td class="num ${cls(h.chg)}" data-v="${h.chg ?? ""}">${spct(h.chg, 1)}</td><td class="num dim" data-v="${h.date ? Date.parse(h.date) : ""}">${esc(fmtDate(h.date))}</td></tr>`).join("") || '<tr><td class="dim">None.</td></tr>'}</table>
+    <div class="cnote">Top 10 from the latest 13F and fund filings (Yahoo). CHG = change in shares last period. Click a column to sort; click a holder to open it (institutions: their 13F; funds: the fund).</div>`;
 }
 
 function bodyIns(t) {

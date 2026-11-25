@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Keel · Portfolio Terminal</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23000'/><path d='M2 6h12l-2 4H4z' fill='%23ffa028'/><rect x='7.2' y='10' width='1.6' height='4.5' fill='%23ffa028'/></svg>">
-  <link rel="stylesheet" href="/static/style.css?v=79">
+  <script>try { if (localStorage.getItem("theme") === "light") document.documentElement.classList.add("light"); } catch (e) {}</script>
+  <link rel="stylesheet" href="/static/style.css?v=81">
 </head>
 <body>
   <header class="top">
@@ -16,12 +17,15 @@
     </div>
     <span class="loaded" id="loaded"></span>
     <div class="kpis" id="kpis"></div>
+    <div class="tape" id="tape" hidden></div>
     <div class="spacer"></div>
     <span class="tags" id="tags"></span>
     <button class="hbtn" id="rfbtn" title="Pull live data now (F5)">⟳ REFRESH</button>
     <select class="hbtn" id="autosel" title="Auto-refresh">
       <option value="0">AUTO OFF</option><option value="15">AUTO 15s</option><option value="30">AUTO 30s</option><option value="60">AUTO 60s</option><option value="90">AUTO 90s</option>
     </select>
+    <button class="hbtn" id="tapebtn" title="Scrolling market tape instead of the NAV and P&amp;L strip">TAPE</button>
+    <button class="hbtn" id="themebtn" title="Switch to the light theme">LIGHT</button>
     <button class="hbtn" id="railbtn" title="Show or hide the right rail">RAIL</button>
     <span class="clock" id="clock"></span>
   </header>
@@ -31,29 +35,30 @@
     <aside id="rail"></aside>
   </div>
   <div class="drill" id="drill" hidden><div class="dbox" id="dbox"></div></div>
-  <script src="/static/js/core.js?v=79"></script>
-  <script src="/static/js/charts.js?v=79"></script>
-  <script src="/static/js/card.js?v=79"></script>
-  <script src="/static/js/drill.js?v=79"></script>
-  <script src="/static/js/port.js?v=79"></script>
-  <script src="/static/js/mkts.js?v=79"></script>
-  <script src="/static/js/watch.js?v=79"></script>
-  <script src="/static/js/splc.js?v=79"></script>
-  <script src="/static/js/ern.js?v=79"></script>
-  <script src="/static/js/des.js?v=79"></script>
-  <script src="/static/js/trade.js?v=79"></script>
-  <script src="/static/js/cal.js?v=79"></script>
-  <script src="/static/js/evt.js?v=79"></script>
-  <script src="/static/js/map.js?v=79"></script>
-  <script src="/static/js/win.js?v=79"></script>
-  <script src="/static/js/secwin.js?v=79"></script>
-  <script src="/static/js/bookwin.js?v=79"></script>
-  <script src="/static/js/panes.js?v=79"></script>
-  <script src="/static/js/newsx.js?v=79"></script>
-  <script src="/static/js/fa.js?v=79"></script>
-  <script src="/static/js/scrn.js?v=79"></script>
-  <script src="/static/js/layout.js?v=79"></script>
-  <script src="/static/js/home.js?v=79"></script>
-  <script src="/static/js/shell.js?v=79"></script>
+  <script src="/static/js/core.js?v=81"></script>
+  <script src="/static/js/charts.js?v=81"></script>
+  <script src="/static/js/card.js?v=81"></script>
+  <script src="/static/js/drill.js?v=81"></script>
+  <script src="/static/js/port.js?v=81"></script>
+  <script src="/static/js/mkts.js?v=81"></script>
+  <script src="/static/js/watch.js?v=81"></script>
+  <script src="/static/js/splc.js?v=81"></script>
+  <script src="/static/js/ern.js?v=81"></script>
+  <script src="/static/js/des.js?v=81"></script>
+  <script src="/static/js/trade.js?v=81"></script>
+  <script src="/static/js/cal.js?v=81"></script>
+  <script src="/static/js/evt.js?v=81"></script>
+  <script src="/static/js/map.js?v=81"></script>
+  <script src="/static/js/win.js?v=81"></script>
+  <script src="/static/js/secwin.js?v=81"></script>
+  <script src="/static/js/bookwin.js?v=81"></script>
+  <script src="/static/js/panes.js?v=81"></script>
+  <script src="/static/js/newsx.js?v=81"></script>
+  <script src="/static/js/fa.js?v=81"></script>
+  <script src="/static/js/scrn.js?v=81"></script>
+  <script src="/static/js/layout.js?v=81"></script>
+  <script src="/static/js/home.js?v=81"></script>
+  <script src="/static/js/topbar.js?v=81"></script>
+  <script src="/static/js/shell.js?v=81"></script>
 </body>
 </html>
