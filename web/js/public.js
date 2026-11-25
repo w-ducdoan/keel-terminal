@@ -8,7 +8,7 @@ if (window.KEEL_PUBLIC) {
   document.querySelector(".brand").insertAdjacentHTML("beforeend", ' <i class="pubtag" title="Market terminal: no portfolio, no account">PUBLIC</i>');
 
   // pages and aliases
-  for (const k of ["HOME", "PORT", "WATCH", "SCRN", "JRNL"]) if (PAGES[k]) PAGES[k].hidden = true;
+  for (const k of ["HOME", "PORT", "WATCH", "JRNL"]) if (PAGES[k]) PAGES[k].hidden = true;
   for (const [a, k] of Object.entries(ALIASES)) if (PAGES[k]?.hidden) delete ALIASES[a];
   ALIASES.H = "MKTS"; ALIASES.HOME = "MKTS";
   currentPage = function () {
@@ -25,7 +25,7 @@ if (window.KEEL_PUBLIC) {
   // functions: nothing that reads a book or needs a broker
   for (const k of ["ATTR", "TRIP", "SI", "THEME"]) delete FN[k];
   for (const k of Object.keys(BOOK_CODES)) delete BOOK_CODES[k];
-  for (const k of ["PORT", "EQS"]) delete FN_LINKS[k];
+  delete FN_LINKS.PORT;
   for (const k of ["THESIS", "SI", "ERN"]) delete SECFN[k];
   for (const c of Object.keys(CLASS_FNS)) CLASS_FNS[c] = CLASS_FNS[c].filter((f) => SECFN[f]);
   for (const s of ["cockpit", "rh", "ern"]) { const i = DES_SECTIONS.indexOf(s); if (i >= 0) DES_SECTIONS.splice(i, 1); }
@@ -59,6 +59,16 @@ if (window.KEEL_PUBLIC) {
   // 13F: the shared fund list and its new buys (no names of your own, no edits to the list)
   if (lsGet("f13:tab") !== "FUNDS") lsSet("f13:tab", "IDEAS");
   lsSet("f13:scope", "book");
+
+  // SCRN: run the presets or your own criteria; no saving, tracking or Gate 0 here (nothing is stored for visitors)
+  if (typeof scrResults === "function") {
+    const scrBase = scrResults;
+    scrResults = function () {
+      return scrBase().replace(/<span>\d+ new · [^<]*<\/span>/, "")
+        .replace(/<div class="small dim">Robinhood cross-check unavailable:[^<]*<\/div>/, "")
+        .replace("<th>COV</th>", "<th></th>");
+    };
+  }
 
   // the map has one universe here
   lsSet("map:uni", "sp500");

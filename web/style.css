@@ -422,3 +422,5 @@ table.sortable th { cursor: pointer; user-select: none; } table.sortable th:hove
 table.sortable th.sorted { color: var(--amber); }
 tr.clk { cursor: pointer; } tr.clk:hover td { background: var(--hl); }
 .kpis[hidden], .tape[hidden] { display: none !important; }
+body.public button[onclick^="scrSave"], body.public button[onclick^="scrDelete"], body.public button[onclick^="scrGate0"],
+body.public [data-scr] button[onclick^="openDrill('track:"], body.public [data-scr] td > .tag, body.public [data-scr] button[onclick^="SCR.showAll"] { display: none !important; }

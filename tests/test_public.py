@@ -13,8 +13,9 @@ def test_allowlist():
           "/api/equity/TOST/rh", "/api/equity/TOST/cockpit", "/api/equity/TOST/ern", "/api/themes", "/api/brief", "/api/crowding"]
     for p in no:
         assert not public.allowed("GET", p), p
-    for p in ["/api/refresh", "/api/open", "/api/13f/funds", "/api/rv/TOST/peers", "/api/state"]:
+    for p in ["/api/refresh", "/api/open", "/api/13f/funds", "/api/rv/TOST/peers", "/api/state", "/api/screens", "/api/tracking"]:
         assert not public.allowed("POST", p), p
+    assert public.allowed("POST", "/api/screen/run") and public.allowed("GET", "/api/screens") and public.allowed("GET", "/api/screen/verify/TOST")
 
 
 def test_inject_sets_flag_and_script():

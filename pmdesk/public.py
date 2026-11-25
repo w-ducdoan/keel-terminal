@@ -32,14 +32,18 @@ ALLOW = [
     r"/api/state", r"/api/series", r"/api/markets", r"/api/lookup(/more)?", r"/api/news", r"/api/cnrange/[^/]+",
     r"/api/why/[^/]+", r"/api/equity/[^/]+/card", r"/api/equity/[^/]+/(des|anr|cacs|rv|fa|ee|hds|ins|cn|flags|splc)",
     r"/api/splc/[^/]+", r"/api/13f", r"/api/13f/funds/search", r"/api/13f/fund/[^/]+", r"/api/heatmap", r"/api/eventfeed",
-    r"/api/calendar", r"/api/sec/[^/]+",
+    r"/api/calendar", r"/api/sec/[^/]+", r"/api/screens", r"/api/screen/verify/[^/]+",
 ]
+# The one POST a visitor may send: running a screen only reads market data and changes nothing.
+POST_ALLOW = {"/api/screen/run"}
 _ALLOW = re.compile(r"^(" + "|".join(ALLOW) + r")/?$")
 
 
 def allowed(method: str, path: str) -> bool:
     if not path.startswith("/api/"):
         return method in ("GET", "HEAD")
+    if method == "POST":
+        return path.rstrip("/") in POST_ALLOW
     return method in ("GET", "HEAD") and bool(_ALLOW.match(path))
 
 
